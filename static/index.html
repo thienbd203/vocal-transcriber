@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vocal Transcriber - MP3 to Lyrics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      .drop-zone {
+        transition: all 0.3s ease;
+      }
+      .drop-zone.dragover {
+        background-color: #4f46e5;
+        border-color: #4f46e5;
+        transform: scale(1.02);
+      }
+      .progress-bar {
+        transition: width 0.3s ease;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <!-- Header -->
+      <header class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+          <i class="fas fa-microphone-alt text-indigo-600 mr-2"></i>
+          Vocal Transcriber
+        </h1>
+        <p tiw="text-gray-600">sử dụng AI để chuyển đổi MP3 thành lời hát</p>
+      </header>
+
+      <!-- Upload Section -->
+      <main class="bg-white rounded-lg shadow-lg p-8">
+        <div id="uploadSection" class="space-y-6">
+          <!-- Drop Zone -->
+          <div
+            id="dropZone"
+            class="drop-zone border-3 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-indigo-500 transition-all"
+          >
+            <i class="fas fa-cloud-upload-alt text-6xl text-gray-400 mb-4"></i>
+            <p class="text-xl text-gray-600 mb-2">Kéo thả file MP3 vào đây</p>
+            <p tiw="text-gray-500">hoặc click để chọn file</p>
+            <input
+              type="file"
+              id="fileInput"
+              accept=".mp3,audio/mpeg"
+              class="hidden"
+            />
+            <p class="text-sm text-gray-400 mt-4">Chỉ chấp nhận file MP3</p>
+          </div>
+
+          <!-- File Info -->
+          <div id="fileInfo" class="hidden bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <i class="fas fa-music text-indigo-600"></i>
+                <span id="fileName" class="font-medium text-gray-700"></span>
+                <span id="fileSize" class="text-sm text-gray-500"></span>
+              </div>
+              <button id="removeFile" class="text-red-500 hover:text-red-700">
+                <i class="fas fa-times-circle"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload Button -->
+          <button
+            id="uploadBtn"
+            class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled
+          >
+            <i class="fas fa-upload mr-2"></i>
+            Bắt đầu xử lý
+          </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="hidden space-y-4">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-blue-700 font-medium">Đang xử lý...</span>
+              <span id="progressPercent" class="text-blue-600 font-bold"
+                >0%</span
+              >
+            </div>
+            <div class="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
+              <div
+                id="progressBar"
+                class="progress-bar bg-blue-600 h-full rounded-full"
+                style="width: 0%"
+              ></div>
+            </div>
+            <p id="progressStatus" class="text-sm text-blue-600 mt-2">
+              Khởi động...
+            </p>
+          </div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="hidden space-y-6">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 class="text-green-800 font-semibold mb-2">
+              <i class="fas fa-check-circle mr-2"></i>
+              Hoàn thành!
+            </h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-gray-600">Thời lượng:</span>
+                <span id="duration" class="font-medium ml-1"></span>
+              </div>
+              <div>
+                <span class="text-gray-600">Số đoạn:</span>
+                <span id="segmentCount" class="font-medium ml-1"></span>
+              </div>
+              <div>
+                <span class="text-gray-600">Ngôn ngữ:</span>
+                <span id="language" class="font-medium ml-1"></span>
+              </div>
+              <div>
+                <span class="text-gray-600">Thời gian xử lý:</span>
+                <span id="processTime" class="font-medium ml-1"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lyrics Display -->
+          <div class="bg-gray-50 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+              <i class="fas fa-align-left mr-2"></i>
+              Lời hát
+            </h3>
+            <div
+              id="lyricsContainer"
+              class="space-y-3 max-h-96 overflow-y-auto"
+            >
+              <!-- Lyrics will be inserted here -->
+            </div>
+          </div>
+
+          <!-- <!-- Download Button -->
+          <button
+            id="downloadBtn"
+            class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+          >
+            <i class="fas fa-download mr-2"></i>
+            Tải xuống JSON
+          </button>
+          -->
+        </div>
+
+        <!-- Error Section -->
+        <div
+          id="errorSection"
+          class="hidden bg-red-50 border border-red-200 rounded-lg p-4"
+        >
+          <h3 class="text-red-800 font-semibold mb-2">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            Đã xảy ra lỗi
+          </h3>
+          <p id="errorMessage" class="text-red-600"></p>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Elements
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileName = document.getElementById("fileName");
+      const fileSize = document.getElementById("fileSize");
+      const removeFile = document.getElementById("removeFile");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const uploadSection = document.getElementById("uploadSection");
+      const progressSection = document.getElementById("progressSection");
+      const resultSection = document.getElementById("resultSection");
+      const errorSection = document.getElementById("errorSection");
+      const progressBar = document.getElementById("progressBar");
+      const progressPercent = document.getElementById("progressPercent");
+      const progressStatus = document.getElementById("progressStatus");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      let selectedFile = null;
+      let resultData = null;
+
+      // File handling
+      dropZone.addEventListener("click", () => fileInput.click());
+
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files.length > 0) {
+          handleFile(e.target.files[0]);
+        }
+      });
+
+      // Drag and drop
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("dragover");
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+
+        if (e.dataTransfer.files.length > 0) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      removeFile.addEventListener("click", () => {
+        selectedFile = null;
+        fileInput.value = "";
+        fileInfo.classList.add("hidden");
+        uploadBtn.disabled = true;
+      });
+
+      function handleFile(file) {
+        if (!file.type.includes("mp3") && !file.type.includes("mpeg")) {
+          showError("Vui lòng chọn file MP3");
+          return;
+        }
+
+        selectedFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.remove("hidden");
+        uploadBtn.disabled = false;
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (
+          Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
+        );
+      }
+
+      // Upload and processing
+      uploadBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+
+        // Show progress
+        uploadSection.classList.add("hidden");
+        progressSection.classList.remove("hidden");
+        errorSection.classList.add("hidden");
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        try {
+          // Simulate progress (since we don't have real progress from backend)
+          let progress = 0;
+          const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            updateProgress(progress, "Đang xử lý audio...");
+          }, 1000);
+
+          const response = await fetch("/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+
+          clearInterval(progressInterval);
+          updateProgress(100, "Hoàn thành!");
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || "Processing failed");
+          }
+
+          resultData = await response.json();
+          showResult(resultData);
+        } catch (error) {
+          showError(error.message);
+        }
+      });
+
+      function updateProgress(percent, status) {
+        progressBar.style.width = percent + "%";
+        progressPercent.textContent = Math.round(percent) + "%";
+        progressStatus.textContent = status;
+      }
+
+      function showResult(data) {
+        progressSection.classList.add("hidden");
+        resultSection.classList.remove("hidden");
+
+        // Update stats
+        document.getElementById("duration").textContent =
+          data.duration + " giây";
+        document.getElementById("segmentCount").textContent =
+          data.segments.length;
+        document.getElementById("language").textContent = data.language;
+        document.getElementById("processTime").textContent =
+          (data.processing_stats?.total_time || 0).toFixed(2) + " giây";
+
+        // Display lyrics
+        const lyricsContainer = document.getElementById("lyricsContainer");
+        lyricsContainer.innerHTML = "";
+
+        data.segments.forEach((segment, index) => {
+          const segmentDiv = document.createElement("div");
+          segmentDiv.className = "bg-white p-3 rounded border border-gray-200";
+          segmentDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-xs text-gray-500">${formatTime(segment.start)} - ${formatTime(segment.end)}</span>
+                        <span class="text-xs text-indigo-600 font-medium">#${index + 1}</span>
+                    </div>
+                    <p class="text-gray-800">${segment.text}</p>
+                `;
+          lyricsContainer.appendChild(segmentDiv);
+        });
+      }
+
+      function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+      }
+
+      function showError(message) {
+        progressSection.classList.add("hidden");
+        errorSection.classList.remove("hidden");
+        document.getElementById("errorMessage").textContent = message;
+      }
+
+      // Download JSON
+      downloadBtn.addEventListener("click", () => {
+        if (!resultData) return;
+
+        const blob = new Blob([JSON.stringify(resultData, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "lyrics.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    </script>
+  </body>
+</html>
