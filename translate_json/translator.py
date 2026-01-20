@@ -2,14 +2,22 @@
 
 import json
 import sys
+import os
+import math
+import logging
 from pathlib import Path
 import ijson
 import argostranslate.package
 import argostranslate.translate
 import threading
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from .config import DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, PROGRESS_INTERVAL, DEFAULT_BACKEND, DEFAULT_MARIAN_MODEL
 from .filters import should_translate
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class JSONTranslator:
@@ -85,7 +93,7 @@ class JSONTranslator:
         """
         if text in self.translation_cache:
             return self.translation_cache[text]
-
+        logger.debug("Translating text via backend %s: %s", self.backend, text)
         with self._lock:
             translated = self._translate_via_backend(text)
         self.translation_cache[text] = translated
