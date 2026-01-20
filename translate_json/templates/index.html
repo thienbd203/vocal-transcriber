@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSON Translator - Dịch File JSON</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      .drop-zone {
+        transition: all 0.3s ease;
+      }
+      .drop-zone.dragover {
+        background-color: #dbeafe;
+        border-color: #3b82f6;
+        transform: scale(1.02);
+      }
+      .progress-bar {
+        transition: width 0.3s ease;
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      <!-- Header -->
+      <header class="text-center mb-10">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+          <i class="fas fa-language text-blue-600 mr-3"></i>
+          JSON Translator
+        </h1>
+        <p class="text-gray-600">Dịch file JSON từ Anh sang Việt Nam</p>
+      </header>
+
+      <!-- Main Content -->
+      <main>
+        <!-- Drop Zone -->
+        <div
+          id="dropZone"
+          class="drop-zone border-3 border-dashed border-gray-300 rounded-xl p-12 text-center bg-white shadow-lg hover:shadow-xl cursor-pointer"
+        >
+          <i class="fas fa-cloud-upload-alt text-6xl text-gray-400 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-700 mb-2">
+            Kéo thả file JSON vào đây
+          </h3>
+          <p class="text-gray-500 mb-4">hoặc click để chọn file</p>
+          <input type="file" id="fileInput" accept=".json" class="hidden" />
+          <button
+            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <i class="fas fa-folder-open mr-2"></i>Chọn File
+          </button>
+        </div>
+
+        <!-- File Info -->
+        <div
+          id="fileInfo"
+          class="hidden mt-6 p-4 bg-white rounded-lg shadow fade-in"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <i class="fas fa-file-code text-blue-600 text-2xl mr-3"></i>
+              <div>
+                <p class="font-semibold text-gray-800" id="fileName"></p>
+                <p class="text-sm text-gray-500" id="fileSize"></p>
+              </div>
+            </div>
+            <button id="removeFile" class="text-red-500 hover:text-red-700">
+              <i class="fas fa-times-circle text-xl"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Translate Button -->
+        <div id="translateSection" class="hidden mt-6 text-center">
+          <button
+            id="translateBtn"
+            class="bg-green-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors shadow-lg"
+          >
+            <i class="fas fa-language mr-2"></i>Bắt Dịch
+          </button>
+        </div>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="hidden mt-8 fade-in">
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Đang dịch...
+            </h3>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+              <div
+                id="progressBar"
+                class="progress-bar bg-blue-600 h-4 rounded-full"
+                style="width: 0%"
+              ></div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+              <span id="progressText">0%</span>
+              <span id="statusText">Đang chuẩn bị...</span>
+            </div>
+            <div
+              id="logOutput"
+              class="mt-4 p-3 bg-gray-100 rounded text-sm font-mono text-gray-700 h-32 overflow-y-auto hidden"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Download Section -->
+        <div id="downloadSection" class="hidden mt-8 fade-in">
+          <div
+            class="bg-green-50 border-2 border-green-200 rounded-lg p-6 text-center"
+          >
+            <i class="fas fa-check-circle text-green-600 text-4xl mb-3"></i>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">
+              Dịch hoàn tất!
+            </h3>
+            <p class="text-gray-600 mb-4">File đã sẵn sàng để tải về</p>
+            <button
+              id="downloadBtn"
+              class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <i class="fas fa-download mr-2"></i>Tải về file đã dịch
+            </button>
+          </div>
+        </div>
+
+        <!-- Error Section -->
+        <div id="errorSection" class="hidden mt-8 fade-in">
+          <div class="bg-red-50 border-2 border-red-200 rounded-lg p-6">
+            <i
+              class="fas fa-exclamation-triangle text-red-600 text-2xl mb-2"
+            ></i>
+            <h3 class="text-lg font-semibold text-red-800 mb-2">
+              Đã xảy ra lỗi
+            </h3>
+            <p id="errorMessage" class="text-red-600"></p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>Sử dụng Argos Translate cho dịch thuật</p>
+      </footer>
+    </div>
+
+    <script>
+      // Global variables
+      let selectedFile = null;
+      let translatedData = null;
+
+      // DOM elements
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileName = document.getElementById("fileName");
+      const fileSize = document.getElementById("fileSize");
+      const translateSection = document.getElementById("translateSection");
+      const translateBtn = document.getElementById("translateBtn");
+      const progressSection = document.getElementById("progressSection");
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      const statusText = document.getElementById("statusText");
+      const logOutput = document.getElementById("logOutput");
+      const downloadSection = document.getElementById("downloadSection");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const errorSection = document.getElementById("errorSection");
+      const errorMessage = document.getElementById("errorMessage");
+      const removeFile = document.getElementById("removeFile");
+
+      // Event listeners
+      dropZone.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", handleFileSelect);
+      translateBtn.addEventListener("click", startTranslation);
+      downloadBtn.addEventListener("click", downloadTranslatedFile);
+      removeFile.addEventListener("click", resetFile);
+
+      // Drag and drop events
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("dragover");
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type === "application/json") {
+          handleFile(files[0]);
+        } else {
+          showError("Vui lòng chọn file JSON hợp lệ");
+        }
+      });
+
+      function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file && file.type === "application/json") {
+          handleFile(file);
+        } else {
+          showError("Vui lòng chọn file JSON hợp lệ");
+        }
+      }
+
+      function handleFile(file) {
+        selectedFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+
+        fileInfo.classList.remove("hidden");
+        translateSection.classList.remove("hidden");
+        hideError();
+      }
+
+      function resetFile() {
+        selectedFile = null;
+        fileInput.value = "";
+        fileInfo.classList.add("hidden");
+        translateSection.classList.add("hidden");
+        progressSection.classList.add("hidden");
+        downloadSection.classList.add("hidden");
+        hideError();
+      }
+
+      async function startTranslation() {
+        if (!selectedFile) return;
+
+        // Show progress
+        translateSection.classList.add("hidden");
+        progressSection.classList.remove("hidden");
+        logOutput.classList.remove("hidden");
+
+        try {
+          // Read and validate file
+          const fileContent = await readFile(selectedFile);
+
+          // Validate JSON before sending
+          try {
+            JSON.parse(fileContent);
+          } catch (e) {
+            showError("File JSON không hợp lệ: " + e.message);
+            progressSection.classList.add("hidden");
+            return;
+          }
+
+          // Check file size
+          if (selectedFile.size > 50 * 1024 * 1024) {
+            showError("File quá lớn (>50MB). Vui lòng sử dụng file nhỏ hơn.");
+            progressSection.classList.add("hidden");
+            return;
+          }
+
+          // Send to backend
+          const response = await fetch("/translate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              json_data: fileContent,
+              from_lang: "en",
+              to_lang: "vi",
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Lỗi từ server");
+          }
+
+          // Handle streaming response
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let result = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  updateProgress(data);
+
+                  if (data.samples) {
+                    appendSamples(data.samples);
+                  }
+
+                  // Stop on error
+                  if (data.error) {
+                    showError(data.error);
+                    if (data.details) {
+                      console.error("Error details:", data.details);
+                    }
+                    return;
+                  }
+                } catch (e) {
+                  console.error("Error parsing server response:", e);
+                }
+              }
+            }
+          }
+
+          // Show download section
+          showDownload();
+        } catch (error) {
+          showError("Lỗi khi dịch file: " + error.message);
+          progressSection.classList.add("hidden");
+        }
+      }
+
+      function updateProgress(data) {
+        if (data.progress !== undefined) {
+          progressBar.style.width = data.progress + "%";
+          progressText.textContent = Math.round(data.progress) + "%";
+        }
+
+        if (data.status) {
+          statusText.textContent = data.status;
+        }
+
+        if (data.log) {
+          logOutput.textContent += data.log + "\n";
+          logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        if (data.result) {
+          translatedData = data.result;
+        }
+      }
+
+      function showDownload() {
+        progressSection.classList.add("hidden");
+        downloadSection.classList.remove("hidden");
+      }
+
+      function appendSamples(samples) {
+        for (const [source, translated] of samples) {
+          const entry = document.createElement("div");
+          entry.className = "text-xs text-gray-700 mb-1";
+          entry.innerHTML = `<span class="font-semibold text-blue-600">${escapeHtml(source)}</span> → <span class="text-green-600">${escapeHtml(translated)}</span>`;
+          logOutput.appendChild(entry);
+        }
+        logOutput.scrollTop = logOutput.scrollHeight;
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function downloadTranslatedFile() {
+        if (!translatedData) return;
+
+        const blob = new Blob([JSON.stringify(translatedData, null, 2)], {
+          type: "application/json",
+        });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "translated.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorSection.classList.remove("hidden");
+      }
+
+      function hideError() {
+        errorSection.classList.add("hidden");
+      }
+
+      function readFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return (
+          Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
+        );
+      }
+    </script>
+  </body>
+</html>
