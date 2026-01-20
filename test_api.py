@@ -28,7 +28,9 @@ def test_api():
     except Exception as e:
         print(f"❌ Cannot connect to server: {e}")
         print("\n💡 Make sure the server is running:")
-        print("   python api_server.py")
+        print("   python server.py")
+        print("   hoặc")
+        print("   python -m uvicorn vocal_transcriber.api.server:app --reload")
         return False
     
     # Test 2: File upload (requires actual MP3 file)

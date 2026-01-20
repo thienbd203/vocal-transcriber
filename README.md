@@ -2,6 +2,30 @@
 
 Dịch vụ chuyển đổi file MP3 thành lời hát sử dụng AI (Demucs + Whisper).
 
+## Cấu trúc project
+
+```
+vocal-transcriber/
+├── vocal_transcriber/          # Main package
+│   ├── __init__.py
+│   ├── __main__.py             # CLI entry point
+│   ├── cli.py                  # CLI interface
+│   ├── stt/                    # STT service module
+│   │   ├── __init__.py
+│   │   └── service.py          # Core STT functions
+│   ├── api/                    # API module
+│   │   ├── __init__.py
+│   │   └── server.py           # FastAPI server
+│   └── utils/                  # Utilities
+│       ├── __init__.py
+│       └── progress.py         # Progress tracking
+├── static/                     # Frontend files
+│   └── index.html
+├── server.py                   # Server runner
+├── requirements.txt
+└── README.md
+```
+
 ## Tính năng
 
 - Tách vocal khỏi nhạc nền bằng Demucs
@@ -20,19 +44,26 @@ pip install -r requirements.txt
 
 ## Chạy ứng dụng
 
-### Chạy API server:
+### 1. CLI Version:
 
 ```bash
-python api_server.py
+python -m vocal_transcriber input.mp3 output_dir
+```
+
+### 2. Web API Version:
+
+```bash
+# Cách 1: Dùng server.py
+python server.py
+
+# Cách 2: Dùng uvicorn
+python -m uvicorn vocal_transcriber.api.server:app --reload
+
+# Cách 3: Dùng fastapi CLI (nếu đã cài)
+fastapi dev vocal_transcriber.api.server
 ```
 
 Server sẽ chạy tại http://localhost:8000
-
-### Hoặc chạy CLI:
-
-```bash
-python main.py input.mp3 output_dir
-```
 
 ## Sử dụng API
 

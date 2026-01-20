@@ -49,3 +49,18 @@ tmp/
 # Models
 whisper_models/
 demucs_models/
+
+# Logs
+*.log
+logs/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
