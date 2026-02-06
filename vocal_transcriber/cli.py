@@ -9,8 +9,8 @@ import sys
 import time
 from pathlib import Path
 
-from ..stt.service import TranscriptionConfig, transcribe_mp3
-from ..utils.progress import ProgressTracker
+from .stt.service import TranscriptionConfig, transcribe_mp3
+from .utils.progress import ProgressTracker
 
 
 def _parse_args() -> argparse.Namespace:
