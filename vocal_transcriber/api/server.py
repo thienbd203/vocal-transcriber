@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-FastAPI Server for MP3 to Lyrics Transcription
+FastAPI Server for MP3 to Lyrics Transcription.
 """
 
-import json
+import logging
 import shutil
 import tempfile
 from pathlib import Path
@@ -12,11 +12,13 @@ from typing import Dict, Any
 import uvicorn
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from ..stt.service import separate_vocals, transcribe_vocals, format_lyrics_chat
+from ..stt.service import TranscriptionConfig, transcribe_mp3
 from ..utils.progress import ProgressTracker
+
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI(
@@ -63,51 +65,38 @@ async def transcribe_audio(file: UploadFile = File(...)) -> Dict[str, Any]:
         JSON with transcription segments and metadata
     """
     # Validate file type
-    if not file.filename.lower().endswith('.mp3'):
+    if not file.filename.lower().endswith(".mp3"):
         raise HTTPException(status_code=400, detail="Only MP3 files are allowed")
-    
-    # Create temporary directory for processing
-    temp_dir = Path(tempfile.mkdtemp())
-    input_path = temp_dir / file.filename
-    output_dir = temp_dir / "output"
-    
-    try:
-        # Save uploaded file
-        with open(input_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        
-        # Initialize progress tracker
-        progress = ProgressTracker()
-        
-        # Step 1: Separate vocals
-        vocal_wav = separate_vocals(input_path, output_dir, progress)
-        
-        # Step 2: Transcribe vocals
-        whisper_result = transcribe_vocals(
-            vocal_wav=vocal_wav,
-            language="vi",
-            model_size="medium",
-            progress=progress
-        )
-        
-        # Step 3: Format to lyrics chat JSON
-        lyrics_chat = format_lyrics_chat(whisper_result, progress)
-        
-        # Add processing statistics
-        lyrics_chat["processing_stats"] = {
-            "total_time": round(progress.get_total_elapsed(), 2),
-            "step_times": progress.step_times
-        }
-        
-        return lyrics_chat
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
-    
-    finally:
-        # Cleanup temporary files
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        temp_dir = Path(tmp_dir)
+        input_path = temp_dir / file.filename
+        output_dir = temp_dir / "output"
+
+        try:
+            with open(input_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            progress = ProgressTracker(enabled=False)
+            config = TranscriptionConfig()
+
+            lyrics_chat = transcribe_mp3(
+                input_mp3=input_path,
+                output_dir=output_dir,
+                config=config,
+                progress=progress,
+            )
+
+            lyrics_chat["processing_stats"] = {
+                "total_time": round(progress.get_total_elapsed(), 2),
+                "step_times": progress.step_times,
+            }
+
+            return lyrics_chat
+
+        except Exception as e:
+            logger.exception("Processing failed")
+            raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
 @app.get("/health")

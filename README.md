@@ -50,6 +50,16 @@ pip install -r requirements.txt
 python -m vocal_transcriber input.mp3 output_dir
 ```
 
+Tuỳ chọn:
+
+```bash
+python -m vocal_transcriber input.mp3 output_dir \
+  --language vi \
+  --model-size medium \
+  --device auto \
+  --no-progress
+```
+
 ### 2. Web API Version:
 
 ```bash
@@ -112,6 +122,6 @@ Truy cập http://localhost:8000 để sử dụng giao diện web:
 
 ## Lưu ý
 
-- Cần GPU để xử lý nhanh hơn
-- Model Whisper mặc định: medium (có thể thay đổi trong code)
+- Cần GPU để xử lý nhanh hơn (tự động chọn `cuda`/`mps`/`cpu` nếu dùng `--device auto`)
+- Model Whisper mặc định: `medium`
 - Chỉ hỗ trợ file MP3
